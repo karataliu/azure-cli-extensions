@@ -96,7 +96,8 @@ def load_arguments(self, _):
         c.argument('api_server_authorized_ip_ranges', type=str, validator=validate_ip_ranges)
         c.argument('aks_custom_headers')
         c.argument('enable_private_cluster', action='store_true')
-        c.argument('enable_managed_identity', action='store_true')
+        c.argument('enable_managed_identity2', action='store_true')
+        c.argument('enable_aad', action='store_true')
 
     with self.argument_context('aks update') as c:
         c.argument('enable_cluster_autoscaler', options_list=["--enable-cluster-autoscaler", "-e"], action='store_true')

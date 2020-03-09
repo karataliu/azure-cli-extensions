@@ -49,20 +49,20 @@ from azure.graphrbac.models import (ApplicationCreateParameters,
                                     KeyCredential,
                                     ServicePrincipalCreateParameters,
                                     GetObjectsParameters)
-from .vendored_sdks.azure_mgmt_preview_aks.v2020_02_01.models import ContainerServiceLinuxProfile
-from .vendored_sdks.azure_mgmt_preview_aks.v2020_02_01.models import ManagedClusterWindowsProfile
-from .vendored_sdks.azure_mgmt_preview_aks.v2020_02_01.models import ContainerServiceNetworkProfile
-from .vendored_sdks.azure_mgmt_preview_aks.v2020_02_01.models import ManagedClusterServicePrincipalProfile
-from .vendored_sdks.azure_mgmt_preview_aks.v2020_02_01.models import ContainerServiceSshConfiguration
-from .vendored_sdks.azure_mgmt_preview_aks.v2020_02_01.models import ContainerServiceSshPublicKey
-from .vendored_sdks.azure_mgmt_preview_aks.v2020_02_01.models import ManagedCluster
-from .vendored_sdks.azure_mgmt_preview_aks.v2020_02_01.models import ManagedClusterAADProfile
-from .vendored_sdks.azure_mgmt_preview_aks.v2020_02_01.models import ManagedClusterAddonProfile
-from .vendored_sdks.azure_mgmt_preview_aks.v2020_02_01.models import ManagedClusterAgentPoolProfile
-from .vendored_sdks.azure_mgmt_preview_aks.v2020_02_01.models import AgentPool
-from .vendored_sdks.azure_mgmt_preview_aks.v2020_02_01.models import ContainerServiceStorageProfileTypes
-from .vendored_sdks.azure_mgmt_preview_aks.v2020_02_01.models import ManagedClusterIdentity
-from .vendored_sdks.azure_mgmt_preview_aks.v2020_02_01.models import ManagedClusterAPIServerAccessProfile
+from .vendored_sdks.azure_mgmt_preview_aks.v2020_03_01.models import ContainerServiceLinuxProfile
+from .vendored_sdks.azure_mgmt_preview_aks.v2020_03_01.models import ManagedClusterWindowsProfile
+from .vendored_sdks.azure_mgmt_preview_aks.v2020_03_01.models import ContainerServiceNetworkProfile
+from .vendored_sdks.azure_mgmt_preview_aks.v2020_03_01.models import ManagedClusterServicePrincipalProfile
+from .vendored_sdks.azure_mgmt_preview_aks.v2020_03_01.models import ContainerServiceSshConfiguration
+from .vendored_sdks.azure_mgmt_preview_aks.v2020_03_01.models import ContainerServiceSshPublicKey
+from .vendored_sdks.azure_mgmt_preview_aks.v2020_03_01.models import ManagedCluster
+from .vendored_sdks.azure_mgmt_preview_aks.v2020_03_01.models import ManagedClusterAADProfile
+from .vendored_sdks.azure_mgmt_preview_aks.v2020_03_01.models import ManagedClusterAddonProfile
+from .vendored_sdks.azure_mgmt_preview_aks.v2020_03_01.models import ManagedClusterAgentPoolProfile
+from .vendored_sdks.azure_mgmt_preview_aks.v2020_03_01.models import AgentPool
+from .vendored_sdks.azure_mgmt_preview_aks.v2020_03_01.models import ContainerServiceStorageProfileTypes
+from .vendored_sdks.azure_mgmt_preview_aks.v2020_03_01.models import ManagedClusterIdentity
+from .vendored_sdks.azure_mgmt_preview_aks.v2020_03_01.models import ManagedClusterAPIServerAccessProfile
 from ._client_factory import cf_resource_groups
 from ._client_factory import get_auth_management_client
 from ._client_factory import get_graph_rbac_management_client
@@ -746,6 +746,8 @@ def aks_create(cmd,     # pylint: disable=too-many-locals,too-many-statements,to
                appgw_subnet_id=None,
                appgw_shared=None,
                appgw_watch_namespace=None,
+               enable_aad=False,
+               aad_admin_group_object_ids=None,
                no_wait=False):
     if not no_ssh_key:
         try:
@@ -929,13 +931,35 @@ def aks_create(cmd,     # pylint: disable=too-many-locals,too-many-statements,to
                                'Are you an Owner on this subscription?')
 
     aad_profile = None
-    if any([aad_client_app_id, aad_server_app_id, aad_server_app_secret, aad_tenant_id]):
+    if enable_aad:
+        if any([aad_client_app_id, aad_server_app_id, aad_server_app_secret]):
+            raise CLIError('enable-aad cannot be used together with "--aad-client-app-id/--aad-server-app-id/--aad-server-app-secret"')
+
+        ids = None
+        if not (aad_admin_group_object_ids is None):
+            if aad_admin_group_object_ids=="":
+                ids = []
+            else:
+                ids = aad_admin_group_object_ids.split(",")
+
+        aad_profile = ManagedClusterAADProfile(
+            managed=True,
+            admin_group_object_ids=ids,
+            tenant_id=aad_tenant_id
+        )
+    else:
+        if not (aad_admin_group_object_ids is None):
+            raise CLIError('admin-aad-object-id can only be used together with "--enable-aad"')
+
+
+    if any([aad_client_app_id, aad_server_app_id, aad_server_app_secret]):
         aad_profile = ManagedClusterAADProfile(
             client_app_id=aad_client_app_id,
             server_app_id=aad_server_app_id,
             server_app_secret=aad_server_app_secret,
             tenant_id=aad_tenant_id
         )
+    
 
     # Check that both --disable-rbac and --enable-rbac weren't provided
     if all([disable_rbac, enable_rbac]):
@@ -1068,7 +1092,9 @@ def aks_update(cmd,     # pylint: disable=too-many-statements,too-many-branches,
                enable_pod_security_policy=False,
                disable_pod_security_policy=False,
                attach_acr=None,
-               detach_acr=None):
+               detach_acr=None,
+               aad_tenant_id=None,
+               aad_admin_group_object_ids=None):
     update_autoscaler = enable_cluster_autoscaler or disable_cluster_autoscaler or update_cluster_autoscaler
     update_acr = attach_acr is not None or detach_acr is not None
     update_pod_security = enable_pod_security_policy or disable_pod_security_policy
@@ -1077,6 +1103,7 @@ def aks_update(cmd,     # pylint: disable=too-many-statements,too-many-branches,
                                                           load_balancer_outbound_ip_prefixes,
                                                           load_balancer_outbound_ports,
                                                           load_balancer_idle_timeout)
+    update_aad_profile = not (aad_tenant_id is None and aad_admin_group_object_ids is None)
     # pylint: disable=too-many-boolean-expressions
     if not update_autoscaler and \
        cluster_autoscaler_profile is None and \
@@ -1084,7 +1111,8 @@ def aks_update(cmd,     # pylint: disable=too-many-statements,too-many-branches,
        not update_lb_profile \
        and api_server_authorized_ip_ranges is None and \
        not update_pod_security and \
-       not update_lb_profile:
+       not update_lb_profile and \
+       not update_aad_profile:
         raise CLIError('Please specify "--enable-cluster-autoscaler" or '
                        '"--disable-cluster-autoscaler" or '
                        '"--update-cluster-autoscaler" or '
@@ -1096,7 +1124,9 @@ def aks_update(cmd,     # pylint: disable=too-many-statements,too-many-branches,
                        '"--detach-acr" or '
                        '"--load-balancer-managed-outbound-ip-count" or '
                        '"--load-balancer-outbound-ips" or '
-                       '"--load-balancer-outbound-ip-prefixes"')
+                       '"--load-balancer-outbound-ip-prefixes" or '
+                       '"--aad-tenant-id" or '
+                       '"--aad-admin-group-object-ids"')
 
     instance = client.get(resource_group_name, name)
 
@@ -1204,6 +1234,20 @@ def aks_update(cmd,     # pylint: disable=too-many-statements,too-many-branches,
     if api_server_authorized_ip_ranges is not None:
         instance.api_server_access_profile = \
             _populate_api_server_access_profile(api_server_authorized_ip_ranges, instance)
+
+    if update_aad_profile:
+        if instance.aad_profile is None or instance.aad_profile.managed == False:
+            raise CLIError('Cannot specify "--update-aad-tenant-id" and "--update-aad-admin-group-object-ids" if managed aad not is enabled')
+        if not (aad_tenant_id is None):
+            instance.aad_profile.tenant_id = aad_tenant_id
+        if not (aad_admin_group_object_ids is None):
+            ids = None
+            if not (aad_admin_group_object_ids is None):
+                if aad_admin_group_object_ids=="":
+                    ids = []
+                else:
+                    ids = aad_admin_group_object_ids.split(",")
+            instance.aad_profile.admin_group_object_ids = ids
 
     return sdk_no_wait(no_wait, client.create_or_update, resource_group_name, name, instance)
 
