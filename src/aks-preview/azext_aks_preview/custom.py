@@ -1669,6 +1669,8 @@ def aks_enable_addons(cmd, client, resource_group_name, name, addons, workspace_
 def aks_rotate_certs(cmd, client, resource_group_name, name, no_wait=True):     # pylint: disable=unused-argument
     return sdk_no_wait(no_wait, client.begin_rotate_cluster_certificates, resource_group_name, name)
 
+def aks_rotate_service_account_signing_keys(cmd, client, resource_group_name, name, no_wait=True):     # pylint: disable=unused-argument
+    pass
 
 def _update_addons(cmd,  # pylint: disable=too-many-branches,too-many-statements
                    instance,
