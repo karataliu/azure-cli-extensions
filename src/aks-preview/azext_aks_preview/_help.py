@@ -1712,6 +1712,10 @@ helps['aks rotate-certs'] = """
     short-summary: Rotate certificates and keys on a managed Kubernetes cluster
     long-summary: Kubernetes will be unavailable during cluster certificate rotation.
 """
+helps['aks rotate-service-account-signing-keys'] = """
+    type: command
+    short-summary: Rotate service account signing keys
+"""
 
 helps['aks pod-identity'] = """
     type: group

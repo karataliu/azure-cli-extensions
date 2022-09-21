@@ -99,6 +99,7 @@ def load_command_table(self, _):
         g.custom_command('rotate-certs', 'aks_rotate_certs', supports_no_wait=True,
                          confirmation='Kubernetes will be unavailable during certificate rotation process.\n' +
                          'Are you sure you want to perform this operation?')
+        g.custom_command('rotate-service-account-signing-keys', 'aks_rotate_service_account_signing_keys', supports_no_wait=True)
         g.wait_command('wait')
         g.command('stop', 'begin_stop', supports_no_wait=True)
         g.command('start', 'begin_start', supports_no_wait=True)
