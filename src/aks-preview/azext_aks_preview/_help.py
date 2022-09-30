@@ -1732,6 +1732,15 @@ helps['aks rotate-certs'] = """
     long-summary: Kubernetes will be unavailable during cluster certificate rotation.
 """
 
+helps['aks oidc-issuer'] = """
+    type: group
+    short-summary: oidc issuer related commands
+"""
+helps['aks oidc-issuer rotate-signing-keys'] = """
+    type: command
+    short-summary: Rotate oidc issuer service account signing keys
+"""
+
 helps['aks pod-identity'] = """
     type: group
     short-summary: Commands to manage pod identities in managed Kubernetes cluster.

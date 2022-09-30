@@ -152,6 +152,11 @@ def load_command_table(self, _):
         g.custom_command('up', 'aks_draft_up')
         g.custom_command('update', 'aks_draft_update')
 
+    with self.command_group('aks oidc-issuer', managed_clusters_sdk, client_factory=cf_managed_clusters) as g:
+        g.custom_command('rotate-signing-keys', 'aks_rotate_service_account_signing_keys',supports_no_wait=True,
+                         confirmation='Be careful that rotate oidc issuer signing keys twice within short period will invalidate service accounts token immediately. Please refer to doc for details.\n' +
+                         'Are you sure you want to perform this operation?')
+
     # AKS pod identity commands
     with self.command_group('aks pod-identity', managed_clusters_sdk, client_factory=cf_managed_clusters) as g:
         g.custom_command('add', 'aks_pod_identity_add')
